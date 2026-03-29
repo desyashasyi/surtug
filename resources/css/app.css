@@ -25,6 +25,15 @@
 /* maryUI */
 @source "../../vendor/robsontenorio/mary/src/View/Components/**/*.php";
 
+/* Force include DaisyUI modal placement modifiers */
+@source inline("modal-top modal-bottom modal-middle modal-start modal-end modal-open");
+
+/* Bottom-slide modals appear behind the bottom nav (nav is z-index 50) */
+.modal-bottom { z-index: 40 !important; }
+
+/* Force include DaisyUI dock (bottom nav) */
+@source inline("dock dock-xs dock-sm dock-md dock-lg dock-xl dock-active");
+
 /* Theme toggle */
 @custom-variant dark (&:where(.dark, .dark *));
 

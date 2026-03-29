@@ -3,22 +3,20 @@ services:
     build:
       target: dev
     environment:
-      PHP_IDE_CONFIG: "serverName=stage"
+      PHP_IDE_CONFIG: "serverName=fetnet"
     restart: unless-stopped
+    ports:
+      - "8080:8080"
 
   nginx:
     restart: unless-stopped
-    ports:
-      - "80:80"
 
-  # --- UBAH KE MYSQL ---
-  mysql:
+  pgsql:
     restart: unless-stopped
     ports:
-      - "3311:3306" # Akses dari DBeaver/Laptop pakai port 3307
-  # ---------------------
+      - "5433:5432"
 
   redis:
     restart: unless-stopped
     ports:
-      - "6381:6379"
+      - "6382:6379"

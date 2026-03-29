@@ -1,0 +1,9 @@
+--- a/vendor/robsontenorio/mary/src/View/Components/Choices.php
++++ b/vendor/robsontenorio/mary/src/View/Components/Choices.php
+@@ -186,6 +186,7 @@ class Choices extends Component
+                                 } else {
+                                     this.selection.includes(id)
+                                         ? this.selection = this.selection.filter(i => i != id)
+                                         : this.selection.push(id)
++                                    this.focused = false
+                                 }

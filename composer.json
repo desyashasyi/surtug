@@ -8,9 +8,10 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
+        "laravel/horizon": "^5.45",
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^2.10.1",
-        "livewire/livewire": "^4.0",
+        "livewire/livewire": "^4.2",
         "maatwebsite/excel": "^3.1",
         "robsontenorio/mary": "^2.6",
         "spatie/laravel-pdf": "^1.8",
@@ -60,7 +61,8 @@
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "patch -p1 --forward --silent < patches/mary-choices-auto-close.patch || true"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""

@@ -5,30 +5,32 @@ services:
             dockerfile: .docker/php/Dockerfile
             target: dev
             args:
-                WWWUSER: ${WWWUSER}
-                WWWGROUP: ${WWWGROUP}
-        restart: always
-        container_name: st-app
+                WWWUSER: ${WWWUSER:-1000}
+                WWWGROUP: ${WWWGROUP:-1000}
+        restart: unless-stopped
+        container_name: fetnet-app
         working_dir: /var/www
         ports:
-            - "8000:8000"
+            - "8001:8000"
             - "5175:5173"
         volumes:
             - .:/var/www
             - .docker/php/supervisord.conf:/etc/supervisord.conf
             - .docker/php/supervisor.conf:/etc/supervisor/conf.d/supervisor.conf
         depends_on:
-            - mysql  # <--- UBAH INI
-            - redis
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_started
         networks:
             - WebFPTE
 
     nginx:
         image: nginx:alpine
-        container_name: st-nginx
-        restart: always
+        container_name: fetnet-nginx
+        restart: unless-stopped
         ports:
-            - "80:80"
+            - "8088:80"
         volumes:
             - .:/var/www
             - .docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -37,37 +39,52 @@ services:
         networks:
             - WebFPTE
 
-    # --- BAGIAN INI DIUBAH DARI POSTGRES KE MYSQL ---
-    mysql:
-        image: mysql:8.0
-        container_name: st-mysql
-        restart: always
+    pgsql:
+        image: postgres:16-alpine
+        container_name: fetnet-pgsql
+        restart: unless-stopped
         environment:
-            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-            MYSQL_ROOT_HOST: "%"
-            MYSQL_DATABASE: ${DB_DATABASE}
-            # Jika user di .env bukan root, baris di bawah ini akan membuat user baru
-            # MYSQL_USER: ${DB_USERNAME}
-            # MYSQL_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_DATABASE:-fetnet}
+            POSTGRES_USER: ${DB_USERNAME:-postgres}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-Ddw8436}
         volumes:
-            - mysql_data:/var/lib/mysql
+            - pgsql_data:/var/lib/postgresql/data
+        ports:
+            - "5433:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-fetnet}"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
         networks:
             - WebFPTE
-        ports:
-            - "3311:3306" # Port default internal
-    # -----------------------------------------------
 
     redis:
         image: redis:alpine
-        container_name: st-redis
-        restart: always
+        container_name: fetnet-redis
+        restart: unless-stopped
         volumes:
             - redis_data:/data
         networks:
             - WebFPTE
 
+    worker-timetable:
+        image: fetnet-app
+        restart: unless-stopped
+        working_dir: /var/www
+        command: ["php", "artisan", "queue:work", "redis", "--queue=timetable", "--sleep=3", "--tries=1", "--timeout=600", "--memory=512"]
+        volumes:
+            - .:/var/www
+        depends_on:
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_started
+        networks:
+            - WebFPTE
+
 volumes:
-    mysql_data: # <--- UBAH DARI pg_data KE mysql_data
+    pgsql_data:
     redis_data:
 
 networks:

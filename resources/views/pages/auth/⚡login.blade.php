@@ -1,73 +1,90 @@
 <?php
 
 use Livewire\Component;
-
+use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Auth;
 use Mary\Traits\Toast;
-use Livewire\Attributes\Layout;
 
-#la
-new #[Layout('layouts::guest')] class extends Component
+new #[Layout('layouts.guest')] class extends Component
 {
     use Toast;
-    public $email;
-    public $password;
 
-    protected $rules = [
-        'email' => 'required|email',
+    public string $email    = '';
+    public string $password = '';
+
+    protected array $rules = [
+        'email'    => 'required|email',
         'password' => 'required|min:6',
     ];
-    public function login()
+
+    public function login(): mixed
     {
-        //dd($this->email, $this->password);
         $this->validate();
 
         if (Auth::attempt(['email' => $this->email, 'password' => $this->password])) {
-            //dd($this->email, $this->password);
-            // Authentication passed...
-            return redirect()->route('admin');
-        }else{
-            $this->error('Email atau password salah', position: 'toast-top toast-center');
-        }
-    }
-};
-?>
+            $user = Auth::user();
 
-<div>
-    <div class="flex flex-wrap -mx-3">
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-        </div>
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-            <br/>
-        </div>
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-        </div>
-    </div>
-    <br/>
-    <br/>
-    <div class="flex flex-wrap -mx-3">
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-        </div>
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-            <x-input label="Name" wire:model="email" placeholder="Your name" icon="o-user" hint="Your email" inline/>
-            <br/>
-            <x-password wire:keydown.enter="login" label="Password" wire:model="password" icon="o-key" hint="Your password" right inline/>
-        </div>
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-        </div>
-    </div>
-    <div class="flex flex-wrap -mx-3">
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-        </div>
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-            <div class="flex flex-wrap -mx-3">
-                <div class="w-full max-w-full text-right px-3 mb-6 sm:w-3/3 sm:flex-none xl:mb-0 xl:w-3/3">
-                    <x-button class="btn btn-primary" label="Login" icon="" wire:click="login" />
-                </div>
-            </div>
-        </div>
-        <div class="w-full max-w-full px-3 mb-6 sm:w-1/3 sm:flex-none xl:mb-0 xl:w-1/3">
-        </div>
-    </div>
-    {{-- Simplicity is an acquired taste. - Katharine Gerould --}}
+            if ($user->hasRole('super-admin')) {
+                return redirect()->route('super-admin.idx');
+            }
+
+            if ($user->hasRole('admin')) {
+                return redirect()->route('admin.idx');
+            }
+
+            return redirect('/');
+        }
+
+        $this->error('Invalid email or password.', position: 'toast-top toast-center');
+        return null;
+    }
+
+    public function redirectToSso(): mixed
+    {
+        return redirect()->route('auth.cas.redirect');
+    }
+}; ?>
+
+<div class="flex min-h-screen items-center justify-center bg-base-200">
+    <x-card class="w-full max-w-sm shadow-xl" title="FetNet" subtitle="Sign in to continue">
+
+        <x-button
+            label="Login via SSO UPI"
+            icon="o-academic-cap"
+            class="btn-primary w-full mb-4"
+            wire:click="redirectToSso"
+            spinner
+        />
+
+        <div class="divider text-xs text-base-content/50">or sign in with local account</div>
+
+        <x-form wire:submit="login" class="mt-4 space-y-4">
+            @error('sso')
+                <x-alert icon="o-exclamation-triangle" class="alert-error">{{ $message }}</x-alert>
+            @enderror
+
+            <x-input
+                label="Email"
+                wire:model="email"
+                placeholder="name@upi.edu"
+                icon="o-envelope"
+                type="email"
+                required
+            />
+
+            <x-password
+                label="Password"
+                wire:model="password"
+                icon="o-key"
+                placeholder="••••••••"
+                right
+                required
+            />
+
+            <x-slot:actions>
+                <x-button label="Sign In" type="submit" class="btn-ghost" spinner="login" />
+            </x-slot:actions>
+        </x-form>
+
+    </x-card>
 </div>
